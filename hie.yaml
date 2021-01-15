@@ -2,3 +2,9 @@ cradle:
   cabal:
     - path: "src/Main.hs"
       component: "synacor:exe:synacor"
+
+    - path: "src/VM.hs"
+      component: "synacor:exe:synacor"
+
+    - path: "src/VMState.hs"
+      component: "synacor:exe:synacor"
