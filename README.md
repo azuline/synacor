@@ -19,9 +19,9 @@ works~
 
 ## Progress
 
-- [x] Code 1
-- [x] Code 2
-- [ ] Code 3
+- [x] Code 1 - mxNXGuMXzRII
+- [x] Code 2 - qdnbyIYbtdIq
+- [x] Code 3 - eqoTTVUAOdxX
 - [ ] Code 4
 - [ ] Code 5
 - [ ] Code 6
