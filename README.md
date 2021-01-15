@@ -10,7 +10,7 @@ your progress. Good luck!
 Running:
 
 ```sh
-$ cat challenge.bin | cabal run
+$ cabal run synacor challenge.bin
 ```
 
 Using a map to represent memory really is inefficient, but I don't know about
