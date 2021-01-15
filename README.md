@@ -19,14 +19,18 @@ works~
 
 ## Progress
 
-- [x] Code 1 - mxNXGuMXzRII
-- [x] Code 2 - qdnbyIYbtdIq
-- [x] Code 3 - eqoTTVUAOdxX
-- [ ] Code 4
-- [ ] Code 5
-- [ ] Code 6
+- [x] Code 1 - mxNXGuMXzRII (free)
+- [x] Code 2 - qdnbyIYbtdIq (opcodes 0,19,21)
+- [x] Code 3 - eqoTTVUAOdxX (passed self-test)
+- [x] Code 4 - dYhOtyHmLAnE (start -> tablet -> use tablet)
+- [x] Code 5 - nzOQMPRdYiCJ (ladder made, go west -> south -> north)
+- [x] Code 6 - jPkGCXxNysAV (coin game -> teleporter)
 - [ ] Code 7
 - [ ] Code 8
+
+Save point encoded as instructions in `game/save_point.in`.
+
+Coin game brute forcer in `game/solve_coins.py`.
 
 ## Architecture
 
