@@ -1,16 +1,15 @@
--- TODO: State monad? Might be nice to pattern out all the setting stuff. Can create
--- state setter functions for pc/regs/whatnot.
-
 module Main where
 
-import qualified Data.ByteString.Lazy as B
-import qualified Data.Binary.Get      as G
-import qualified Data.Char            as C
-import qualified Data.Map             as M
-import           Data.Word                 (Word16)
+import qualified Control.Monad.State.Lazy as S
+import qualified Data.ByteString.Lazy     as B
+import qualified Data.Binary.Get          as G
+import qualified Data.Char                as C
+import qualified Data.Map                 as M
+import           Data.Word                     (Word16)
 -- import           Debug.Trace
 
-type Memory = M.Map Word16 Word16
+type Instructions = [Word16]
+type Memory       = M.Map Word16 Word16
 
 data VM = VM {
     memory  :: Memory
@@ -26,18 +25,16 @@ data VM = VM {
   , r7      :: Word16
   }
 
+type VMState = S.StateT VM IO
+
 main :: IO ()
 main =
   do bin <- B.getContents
-     runVM
-       . createVM
-       . loadProgramIntoMemory
-       . G.runGet bytesToWord16s
-       $ bin
+     let vm = createVM . loadProgramIntoMemory . G.runGet bytesToWord16s $ bin
+     S.evalStateT runVM vm
 
 -- | Convert a bytestring to a program (list of little-endian 16-bit integers).
--- TODO: Is it possible to turn this into a higher-order function?
-bytesToWord16s :: G.Get [Word16]
+bytesToWord16s :: G.Get Instructions
 bytesToWord16s =
   do empty <- G.isEmpty
      if empty
@@ -46,9 +43,11 @@ bytesToWord16s =
                 xs <- bytesToWord16s
                 pure (x:xs)
 
-loadProgramIntoMemory :: [Word16] -> Memory
+-- | Given a program (list of Word16s), create our map of the system memory.
+loadProgramIntoMemory :: Instructions -> Memory
 loadProgramIntoMemory = M.fromList . zip [0,16..]
 
+-- | Create a VM with an initial state. The initial memory is passed in.
 createVM :: Memory -> VM
 createVM memory = VM {
     memory  = memory
@@ -65,19 +64,49 @@ createVM memory = VM {
   }
 
 -- | Execute a program in our VM.
-runVM :: VM -> IO ()
-runVM vm =
-  case getNextInstructions vm of
-    (0:_)    -> pure ()
-    (19:x:_) -> do printChar x
-                   runVM $ vm { pc = pc vm + 32 }
-    (21:_)   -> runVM $ vm { pc = pc vm + 16 }
-    (x:_)    -> putStrLn $ "Found unknown opcode " <> show x
+runVM :: VMState ()
+runVM =
+  do vm <- S.get
+     runOpcode $ getNextInstructions vm
+
+-- | Execute an opcode of our program. Returns a state function parametrized by the next
+-- instruction(s).
+runOpcode :: [Word16] -> VMState ()
+
+-- Opcode 0:  Halt the program.
+runOpcode (0:_) =
+  pure ()
+
+-- Opcode 19: Print the argument's corresponding ASCII character.
+runOpcode (19:x:_) =
+  do S.liftIO . printChar $ x
+     incrPC 32
+     recurse
+
+-- Opcode 21: NoOp (do nothing).
+runOpcode (21:_) =
+  do incrPC 16
+     recurse
+
+-- Unknown opcode: Error!
+runOpcode (x:_) =
+  do S.liftIO . putStrLn $ "Found unknown opcode " <> show x
+
+-- | Increment the program counter by `x`.
+incrPC :: Word16 -> VMState ()
+incrPC x =
+  do vm <- S.get
+     S.put $ vm { pc = pc vm + x }
+
+recurse :: VMState ()
+recurse =
+  do vm <- S.get
+     S.liftIO $ S.evalStateT runVM vm
 
 -- | Get the next instructions in the VM from memory, starting from the PC.
-getNextInstructions :: VM -> [Word16]
+getNextInstructions :: VM -> Instructions
 getNextInstructions vm =
-  case pc vm `M.lookup` memory vm of
+  case M.lookup (pc vm) (memory vm) of
     Just x  -> x : getNextInstructions (vm { pc = pc vm + 16 })
     Nothing -> []
 
